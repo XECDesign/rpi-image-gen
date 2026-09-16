@@ -5,6 +5,8 @@ import yaml
 from pathlib import Path
 from typing import Optional, Dict, Any, Tuple
 
+from env_resolver import assert_assignable
+
 
 class ConfigLoader:
     def __init__(self, cfg_path: str, *, expand_vars: bool = True, overrides_path: Optional[str] = None, search_paths: Optional[list[str]] = None):
@@ -325,6 +327,11 @@ class ConfigLoader:
             if override_key not in processed_env_keys:
                 self._set_env_if_unset(override_key, override_value)
 
+    def _write_assignment(self, file_handle, key: str, value: str):
+        """Write one assignment, rejecting what the reader cannot recover"""
+        assert_assignable(key, value)
+        file_handle.write(f'{key}="{value}"\n')
+
     def _write_var(self, file_handle, section: str, key: str, value: str):
         """Write variable to file, use env value else override value else config value"""
         env_key = self._env_key(section, key)
@@ -340,7 +347,7 @@ class ConfigLoader:
             effective_value = self._expand(value)
             source = "config"
 
-        file_handle.write(f'{env_key}="{effective_value}"\n')
+        self._write_assignment(file_handle, env_key, effective_value)
 
         # Use same output format as _set_env_if_unset for consistency
         if source == "env":
@@ -404,7 +411,7 @@ class ConfigLoader:
             if section_filter is not None and section_filter != "env":
                 return
 
-        file_handle.write(f'{override_key}="{effective_value}"\n')
+        self._write_assignment(file_handle, override_key, effective_value)
 
         # Print to console for consistency
         if source == "env":
@@ -444,7 +451,7 @@ class ConfigLoader:
             else:
                 effective_value = self._expand(value)
                 source = "config"
-            file_handle.write(f'{key}="{effective_value}"\n')
+            self._write_assignment(file_handle, key, effective_value)
             if source == "env":
                 print(f"ENV {key}={effective_value}")
             elif source == "override":

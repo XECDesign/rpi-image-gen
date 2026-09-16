@@ -1,0 +1,12 @@
+# METABEGIN
+# X-Env-Layer-Name: test-multiline-default
+# X-Env-Layer-Desc: Default value carried across a continuation line
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: mld
+#
+# X-Env-Var-opt: first
+#  second
+# X-Env-Var-opt-Desc: Value spanning a continuation line
+# X-Env-Var-opt-Set: y
+# METAEND

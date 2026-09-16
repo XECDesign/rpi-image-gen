@@ -150,6 +150,41 @@ run_test "dryconfig10 - zero2w" \
     0 \
     "Configuration should parse correctly"
 
+run_test "dryconfig11 - multiline value" \
+    'out=$($IG config '"${SRC}"'/config/invalid-multiline-value.yaml --write-to /dev/null 2>&1); \
+     test $? -ne 0 && echo "$out" | grep -q "IGconf_ssh_pubkey_user1: value spans multiple lines"' \
+    0 \
+    "Configuration should reject a value spanning multiple lines"
+
+run_test "dryconfig12 - carriage return value" \
+    'out=$($IG config '"${SRC}"'/config/invalid-carriage-return-value.yaml --write-to /dev/null 2>&1); \
+     test $? -ne 0 && echo "$out" | grep -q "IGconf_ssh_pubkey_user1: value spans multiple lines"' \
+    0 \
+    "Configuration should reject a value containing a carriage return"
+
+run_test "dryconfig13 - trailing newline key" \
+    'out=$($IG config '"${SRC}"'/config/invalid-trailing-newline-key.yaml --write-to /dev/null 2>&1); \
+     test $? -ne 0 && echo "$out" | grep -q "Invalid variable name"' \
+    0 \
+    "Configuration should reject a key ending in a newline"
+
+run_test "dryconfig14 - invalid key" \
+    'out=$($IG config '"${SRC}"'/config/invalid-key.yaml --write-to /dev/null 2>&1); \
+     test $? -ne 0 && echo "$out" | grep -q "Invalid variable name"' \
+    0 \
+    "Configuration should reject a key that is not a valid variable name"
+
+run_test "dryconfig15 - single line value" \
+    "$IG config ${SRC}/config/trixie-ab-min-splash.yaml --write-to /dev/null" \
+    0 \
+    "Configuration should accept single line values"
+
+run_test "dryconfig16 - expanded multiline value" \
+    'out=$(printf "n\n" | $IG build -c '"${SRC}"'/config/invalid-expanded-multiline.yaml -I 2>&1); \
+     test $? -ne 0 && echo "$out" | grep -q "Expanded value spans multiple lines"' \
+    0 \
+    "An expanded value spanning lines should be rejected"
+
 print_summary
 exit 0
 

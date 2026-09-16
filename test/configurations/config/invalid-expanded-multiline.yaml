@@ -1,0 +1,13 @@
+# Config with a value that only spans lines once expanded
+device:
+  layer: rpi5
+
+image:
+  layer: image-rpios
+  name: subst-test
+
+layer:
+  base: trixie-minbase
+
+demo:
+  ml: $(echo A=1; echo B=2)

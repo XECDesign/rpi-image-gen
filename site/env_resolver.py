@@ -12,6 +12,7 @@ __all__ = [
     "CircularReferenceError",
     "UndefinedVariableError",
     "load_env_file",
+    "assert_assignable",
     "write_env_file",
     "LazyEnvResolver",
     "AnchorRegistry",
@@ -24,7 +25,7 @@ _VAR_PATTERN = re.compile(r"\$\{([^}]+)\}")
 _VALID_VAR = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
-class AssignmentError(Exception):
+class AssignmentError(ValueError):
     """Raised when a shell-style assignment cannot be parsed or evaluated."""
 
 
@@ -50,12 +51,20 @@ def load_env_file(path: str | os.PathLike[str]) -> "OrderedDict[str, str]":
             name, value = stripped.split("=", 1)
             name = name.strip()
             value = value.strip()
-            if not _VALID_VAR.match(name):
+            if not _VALID_VAR.fullmatch(name):
                 raise AssignmentError(f"Invalid variable name '{name}' ({resolved}:{lineno})")
             if len(value) >= 2 and value[0] == value[-1] == '"':
                 value = value[1:-1]
             ordered[name] = value
     return ordered
+
+
+def assert_assignable(name: str, value: str) -> None:
+    """Reject an assignment the line oriented reader cannot recover."""
+    if not _VALID_VAR.fullmatch(name):
+        raise AssignmentError(f"Invalid variable name '{name}'")
+    if "\n" in value or "\r" in value:
+        raise AssignmentError(f"{name}: value spans multiple lines")
 
 
 def write_env_file(
@@ -68,7 +77,9 @@ def write_env_file(
     target.parent.mkdir(parents=True, exist_ok=True)
     with open(target, "w", encoding="utf-8") as handle:
         for name in assignments:
-            handle.write(f"{name}={resolved_values.get(name, '')}\n")
+            value = resolved_values.get(name, "")
+            assert_assignable(name, value)
+            handle.write(f"{name}={value}\n")
 
 
 class AnchorRegistry:
@@ -225,7 +236,7 @@ class LazyEnvResolver:
                     if bound_var:
                         return self.resolve(bound_var)
                     raise
-            if not _VALID_VAR.match(token):
+            if not _VALID_VAR.fullmatch(token):
                 raise AssignmentError(f"Invalid reference '${{{token}}}' in {current_var}")
             return self.resolve(token)
 

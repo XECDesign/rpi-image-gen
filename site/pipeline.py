@@ -169,7 +169,10 @@ def _pipeline_main(args):
         raise SystemExit(1)
 
     # Write out
-    write_env_file(args.env_out, assignments, final_values)
+    try:
+        write_env_file(args.env_out, assignments, final_values)
+    except AssignmentError as e:
+        raise SystemExit(f"Cannot write environment: {e}")
 
 
 def _inject_root_anchors(anchor_map: Dict[str, Dict[str, Optional[str]]], env_assignments: Dict[str, str]) -> None:

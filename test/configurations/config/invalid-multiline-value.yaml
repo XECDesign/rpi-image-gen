@@ -1,0 +1,15 @@
+# Config with a value spanning multiple lines
+device:
+  layer: rpi5
+
+image:
+  layer: image-rpios
+  name: multiline-test
+
+layer:
+  base: trixie-minbase
+
+ssh:
+  pubkey_user1: |-
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIexamplekeyone alice@host
+    ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQexamplekeytwo= bob@host

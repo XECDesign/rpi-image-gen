@@ -412,6 +412,11 @@ run_test "validation-failures-validate" \
     1 \
     "Metadata with validation failures should fail to validate"
 
+run_test "invalid-multiline-default" \
+    'cleanup_env; TMP_OUT=$(mktemp); out=$(ig metadata --parse ${META}/invalid-multiline-default.yaml --write-out "$TMP_OUT" 2>&1); test $? -ne 0 && echo "$out" | grep -q "value spans multiple lines" && ! test -s "$TMP_OUT"; status=$?; rm -f "$TMP_OUT"; exit $status' \
+    0 \
+    "A default spanning a continuation line should not be written out"
+
 # ---------------------------------------------------------------------------
 print_header "LAYER FUNCTIONALITY TESTS"
 

@@ -250,6 +250,17 @@ collect_layers()
          die "Layer env expansion failed"
    fi
 
+   # An expanded value can still introduce a line break - command substitution
+   # is expanded here, not when the assignment was checked. Hooks read this
+   # file a line at a time, so a stray line becomes a variable nobody declared.
+   # One line is written per name, so count rather than test each line's shape:
+   # a continuation can look exactly like an assignment.
+   if [[ $(wc -l < "${TMPDIR}/final.env") -ne ${#vars[@]} ]] ||
+      grep -q $'\r' "${TMPDIR}/final.env"; then
+      nl -ba "${TMPDIR}/final.env" >&2
+      die "Expanded value spans multiple lines"
+   fi
+
    # Write bootstrap information
    local bdir=$(get_var IGconf_sys_bootstrapdir "${TMPDIR}/final.env") || \
       die "No bootstrap dir"

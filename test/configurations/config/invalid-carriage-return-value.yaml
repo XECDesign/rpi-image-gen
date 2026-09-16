@@ -1,0 +1,13 @@
+# Config with a value containing a carriage return
+device:
+  layer: rpi5
+
+image:
+  layer: image-rpios
+  name: cr-test
+
+layer:
+  base: trixie-minbase
+
+ssh:
+  pubkey_user1: "ssh-ed25519 AAAAexamplekey alice@host\rIGconf_injected=pwned"

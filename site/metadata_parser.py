@@ -7,6 +7,7 @@ from debian import deb822
 from typing import Dict
 from validators import parse_validator
 from env_types import EnvVariable, EnvLayer, EnvTrait, MetadataContainer, XEnv, VariableResolver
+from env_resolver import AssignmentError, assert_assignable
 from logger import log_error
 
 
@@ -1343,9 +1344,19 @@ def _main(args):
 
             # Write key=value pairs to file if write_out is specified
             if hasattr(args, 'write_out') and args.write_out:
+                resolved_vars = meta.get_resolved_env_vars()
+                settable_vars = {name: var.value for name, var in resolved_vars.items() if var.should_set_in_environment()}
+                for fullvar, default_value in settable_vars.items():
+                    env_value = os.environ.get(fullvar, default_value)
+                    try:
+                        assert_assignable(fullvar, env_value if env_value is not None else "")
+                    except AssignmentError as e:
+                        log_error(str(e))
+                        has_validation_errors = True
+                if has_validation_errors:
+                    exit(1)
+
                 try:
-                    resolved_vars = meta.get_resolved_env_vars()
-                    settable_vars = {name: var.value for name, var in resolved_vars.items() if var.should_set_in_environment()}
                     with open(args.write_out, 'w') as f:
                         for fullvar, default_value in settable_vars.items():
                             env_value = os.environ.get(fullvar, default_value)
@@ -1495,7 +1506,20 @@ def _main(args):
             var = resolved[key]
             if not var.should_set_in_environment():
                 continue
-            print(f'{key}="{var.value if var.value is not None else ""}"')
+            try:
+                assert_assignable(key, var.value if var.value is not None else "")
+            except AssignmentError as e:
+                print(f"[ERROR] {e}", file=sys.stderr)
+                has_errors = True
+        if has_errors:
+            exit(1)
+
+        for key in sorted(resolved.keys()):
+            var = resolved[key]
+            if not var.should_set_in_environment():
+                continue
+            value = var.value if var.value is not None else ""
+            print(f'{key}="{value}"')
 
     elif command == "describe":
         try:

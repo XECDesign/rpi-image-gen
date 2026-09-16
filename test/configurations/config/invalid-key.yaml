@@ -1,0 +1,13 @@
+# Config with a key that is not a valid variable name
+device:
+  layer: rpi5
+
+image:
+  layer: image-rpios
+  name: key-test
+
+layer:
+  base: trixie-minbase
+
+ssh:
+  "pubkey=user1": example

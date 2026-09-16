@@ -1,0 +1,13 @@
+# Config with a key ending in a newline
+device:
+  layer: rpi5
+
+image:
+  layer: image-rpios
+  name: keynl-test
+
+layer:
+  base: trixie-minbase
+
+ssh:
+  "pubkey_user1\n": example
