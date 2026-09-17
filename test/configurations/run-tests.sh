@@ -150,6 +150,43 @@ run_test "dryconfig10 - zero2w" \
     0 \
     "Configuration should parse correctly"
 
+run_test "dryconfig11 - fs labels" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_image_boot_label=bootfs IGconf_image_root_label=rootfs" \
+    0 \
+    "Configuration should parse successfully"
+
+run_test "dryconfig12 - over-long boot label" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_image_boot_label=TOOLONGLABEL" \
+    1 \
+    "Configuration should reject a boot label over 11 characters"
+
+run_test "dryconfig13 - over-long root label" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_image_root_label=SEVENTEENCHARSXXX" \
+    1 \
+    "Configuration should reject a root label over 16 characters"
+
+run_test "dryconfig14 - boot label w/space" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- 'IGconf_image_boot_label=BOOT FS'" \
+    1 \
+    "Configuration should reject a label containing a space"
+
+run_test "dryconfig15 - boot label w/slash" \
+    "printf 'n\n' | $IG build -c trixie-minbase.yaml -I -- IGconf_image_boot_label=BOOT/1" \
+    1 \
+    "Configuration should reject a label containing a slash"
+
+run_test "dryconfig16 - identical fs labels" \
+    'out=$(printf "n\n" | $IG build -c trixie-minbase.yaml -I -- IGconf_image_boot_label=RPI IGconf_image_root_label=RPI 2>&1); \
+     test $? -ne 0 && echo "$out" | grep -q "Conflict:.*boot_label"' \
+    0 \
+    "Configuration should reject identical boot and root labels"
+
+run_test "dryconfig17 - root label w/OSROOT_CRYPT" \
+    'out=$(printf "n\n" | $IG build -c trixie-minbase.yaml -I -- IGconf_image_root_label=OSROOT_CRYPT 2>&1); \
+     test $? -ne 0 && echo "$out" | grep -q "Conflict:.*OSROOT_CRYPT"' \
+    0 \
+    "Configuration should reject a root label colliding with the LUKS label"
+
 print_summary
 exit 0
 

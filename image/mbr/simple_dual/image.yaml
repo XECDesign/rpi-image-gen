@@ -30,6 +30,22 @@
 # X-Env-Var-root_part_size-Valid: size
 # X-Env-Var-root_part_size-Set: y
 #
+# X-Env-Var-boot_label: BOOT
+# X-Env-Var-boot_label-Desc: Boot partition filesystem label. The by-slot udev
+#  rule is generated to match.
+# X-Env-Var-boot_label-Required: n
+# X-Env-Var-boot_label-Valid: regex:^[A-Za-z0-9_-]{1,11}$
+# X-Env-Var-boot_label-Set: y
+# X-Env-Var-boot_label-Conflicts: IGconf_image_boot_label == IGconf_image_root_label
+#
+# X-Env-Var-root_label: ROOT
+# X-Env-Var-root_label-Desc: Root partition filesystem label. The by-slot udev
+#  rule is generated to match.
+# X-Env-Var-root_label-Required: n
+# X-Env-Var-root_label-Valid: regex:^[A-Za-z0-9_-]{1,16}$
+# X-Env-Var-root_label-Set: y
+# X-Env-Var-root_label-Conflicts: IGconf_image_root_label == 'OSROOT_CRYPT'
+#
 # X-Env-Var-assetdir: ${DIRECTORY}
 # X-Env-Var-assetdir-Desc: Image specific asset directory
 # X-Env-Var-assetdir-Required: n

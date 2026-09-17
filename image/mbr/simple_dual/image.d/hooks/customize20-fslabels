@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -eu
+
+# Render the by-slot udev rule from the configured filesystem labels
+rules="${1}/etc/udev/rules.d/99-rpi-05-image.rules"
+
+[ -f "$rules" ] || die "fslabels: $rules not found"
+
+sed -i \
+   -e "s|<BOOT_LABEL>|${IGconf_image_boot_label}|g" \
+   -e "s|<ROOT_LABEL>|${IGconf_image_root_label}|g" \
+   "$rules"
+
+if grep -q '<[A-Z][A-Z0-9_]*>' "$rules"; then
+   die "fslabels: unsubstituted placeholder in $rules"
+fi

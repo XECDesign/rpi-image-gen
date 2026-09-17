@@ -40,7 +40,7 @@ image <IMAGE_NAME>.<IMAGE_SUFFIX> {
 
 image boot.vfat {
    vfat {
-      label = "BOOT"
+      label = "<BOOT_LABEL>"
       extraargs = "<VFAT_EXTRAARGS>"
    }
    size = <FW_SIZE>
@@ -50,7 +50,7 @@ image boot.vfat {
 
 image root.ext4 {
    ext4 {
-      label = "ROOT"
+      label = "<ROOT_LABEL>"
       use-mke2fs = true
       mke2fs-conf = <MKE2FS_CONF>
       extraargs = "<MKE2FS_EXTRAARGS>"

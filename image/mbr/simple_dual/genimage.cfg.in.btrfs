@@ -40,7 +40,7 @@ image <IMAGE_NAME>.<IMAGE_SUFFIX> {
 
 image boot.vfat {
    vfat {
-      label = "BOOT"
+      label = "<BOOT_LABEL>"
       extraargs = "<VFAT_EXTRAARGS>"
    }
    size = <FW_SIZE>
@@ -50,7 +50,7 @@ image boot.vfat {
 
 image root.btrfs {
    btrfs {
-      label = "ROOT"
+      label = "<ROOT_LABEL>"
       extraargs = "<BTRFS_EXTRAARGS>"
    }
    size = <ROOT_SIZE>
