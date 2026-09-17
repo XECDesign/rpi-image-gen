@@ -1,0 +1,13 @@
+# Config with a value that is itself wrapped in quotes
+device:
+  layer: rpi5
+
+image:
+  layer: image-rpios
+  name: wrapped-test
+
+layer:
+  base: trixie-minbase
+
+demo:
+  q: '"hello"'

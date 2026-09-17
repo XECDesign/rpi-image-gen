@@ -150,6 +150,21 @@ run_test "dryconfig10 - zero2w" \
     0 \
     "Configuration should parse correctly"
 
+run_test "dryconfig11 - quoted value" \
+    "out=\$(printf 'n\n' | $IG build -c ${SRC}/config/quoted-value.yaml -I 2>&1); \
+     test \$? -eq 0 && \
+     bdir=\$(echo \"\$out\" | sed -n 's/^IGconf_sys_bootstrapdir *: *//p' | head -n1) && \
+     test -n \"\$bdir\" && \
+     grep -qxF 'IGconf_demo_q=systemd.setenv=X=\"a b\"' \"\$bdir/final.env\"" \
+    0 \
+    "final.env should carry a quoted value verbatim"
+
+run_test "dryconfig12 - wrapped value" \
+    "out=\$(printf 'n\n' | $IG build -c ${SRC}/config/wrapped-value.yaml -I 2>&1); \
+     test \$? -eq 0 && printf '%s' \"\$out\" | grep -qxF 'IGconf_demo_q : \"hello\"'" \
+    0 \
+    "A value wrapped in quotes should keep them"
+
 print_summary
 exit 0
 

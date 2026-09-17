@@ -26,7 +26,7 @@ declare -a VERIFIED_FILES=()
 
 extract_target_path() {
   local final_env="$1"
-  sed -n 's/^IGconf_target_path="\(.*\)"$/\1/p' "$final_env" | head -n 1
+  sed -n 's/^IGconf_target_path="\?\([^"]*\)"\?$/\1/p' "$final_env" | head -n 1
 }
 
 run_one() {

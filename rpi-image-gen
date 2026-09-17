@@ -154,7 +154,7 @@ parameter_assembly()
 
    # Toolchain variables. Native unless ARCH forces cross.
    if [ -z "${ARCH:-}" ]; then
-      ARCH=$(get_var ARCH "${TMPDIR}/config.env") || true
+      ARCH=$(get_var -q ARCH "${TMPDIR}/config.env") || true
    fi
 
    DEB_BUILD_ARCH_VAL="${DEB_BUILD_ARCH:-$(dpkg-architecture -qDEB_BUILD_ARCH)}"
@@ -210,7 +210,7 @@ collect_layers()
          IGconf_device_layer|IGconf_image_layer|IGconf_layer_*) layers+=("$v");;
       esac
    }
-   mapfile_kv "${TMPDIR}/config.env" _collect
+   mapfile_kv -q "${TMPDIR}/config.env" _collect
 
    msg "PIPELINE: ${layers[*]}"
    msg "SEARCH: $HOST_LAYER_PATH"
@@ -242,7 +242,7 @@ collect_layers()
          shift
          for v in "$@"; do
             eval "val=\${$v-}"
-            printf "%s=\"%s\"\n" "$v" "$val"
+            printf "%s=%s\n" "$v" "$val"
          done
          ' _ "${TMPDIR}/env.safe" "${vars[@]}" > "${TMPDIR}/final.env"
       then

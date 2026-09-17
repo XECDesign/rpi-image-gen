@@ -111,7 +111,7 @@ runenv() {
     local -a env_args
     while IFS='=' read -r k v; do
        env_args+=("$k=$v")
-    done < <(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d;s/"//g' "$file")
+    done < <(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d' "$file")
 
     if [[ $safe -eq 1 ]]; then
        runsafe "${env_opts[@]}" "${env_args[@]}" "${cmd[@]}"
@@ -123,14 +123,16 @@ export -f runenv
 
 
 # Retrieve a variable from a file containing key value pairs
+# -q unwraps the double quotes config.env writes around values
 get_var() {
+   local quoted=0
+   [[ ${1:-} == -q ]] && { quoted=1; shift; }
    local key="$1" file="$2"
    local line value
 
    if line=$(grep "^${key}=" "$file" 2>/dev/null); then
       value="${line#*=}"
-      value="${value#\"}"
-      value="${value%\"}"
+      [[ $quoted -eq 1 && ${#value} -ge 2 && $value == \"*\" ]] && value="${value:1:-1}"
       [[ -n "$value" ]] && { echo "$value"; return 0; }
    fi
    return 1
@@ -138,8 +140,10 @@ get_var() {
 
 
 # General purpose key=value file read with command callback
+# -q unwraps the double quotes config.env writes around values
 mapfile_kv() {
-   local file cmd key val
+   local file cmd key val quoted=0
+   [[ ${1:-} == -q ]] && { quoted=1; shift; }
    file=$1; shift || die "$0 missing file"
    cmd=$1;  shift || die "$0 missing callback"
 
@@ -154,8 +158,7 @@ mapfile_kv() {
    while IFS= read -r line || [[ -n $line ]]; do
       key=${line%%=*}
       val=${line#*=}
-      val=${val#\"}
-      val=${val%\"}
+      [[ $quoted -eq 1 && ${#val} -ge 2 && $val == \"*\" ]] && val="${val:1:-1}"
       "$cmd" "$key" "$val" "$@" || { err "$0 exec $cmd" ; return 1 ;}
    done < "$file"
 }

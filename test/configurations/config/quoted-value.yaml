@@ -1,0 +1,13 @@
+# Config with a double quote inside a value
+device:
+  layer: rpi5
+
+image:
+  layer: image-rpios
+  name: quoted-test
+
+layer:
+  base: trixie-minbase
+
+demo:
+  q: 'systemd.setenv=X="a b"'
