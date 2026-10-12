@@ -230,6 +230,18 @@ run_test "envfile - line-based layer env" \
     0 \
     "A line-based layer env file, without a final newline, should reach hooks"
 
+run_test "dryconfig18 - multiline string substitution" \
+    'out=$(printf "n\n" | $IG build -c '"${SRC}"'/config/multiline-subst-hostname.yaml -I 2>&1); \
+     test $? -ne 0 && echo "$out" | grep -q "IGconf_device_hostname spans multiple lines after expansion"' \
+    0 \
+    "A string variable should reject command substitution spanning lines"
+
+run_test "dryconfig19 - multiline undeclared override" \
+    'out=$(printf "n\n" | $IG build -c trixie-minbase.yaml -I -- "IGconf_demo_x=$(printf "a\nb")" 2>&1); \
+     test $? -ne 0 && echo "$out" | grep -q "IGconf_demo_x spans multiple lines after expansion"' \
+    0 \
+    "A variable no layer declares as string-multiline should not span lines"
+
 print_summary
 exit 0
 

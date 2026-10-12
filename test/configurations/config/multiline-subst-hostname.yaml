@@ -1,0 +1,5 @@
+# Command substitution producing several lines for a single-line string variable
+include:
+  file: trixie-minbase.yaml
+device:
+  hostname: $(cat ${IGTOP}/test/configurations/config/two-keys.pub)

@@ -226,6 +226,7 @@ collect_layers()
       --path "$HOST_LAYER_PATH" \
       --env-out "${TMPDIR}/env.out" \
       --plan-out "${TMPDIR}/layer.plan" \
+      --multiline-out "${TMPDIR}/env.multiline" \
       || die "pipeline failed"
 
    msg "PIPELINE: OK"
@@ -255,6 +256,20 @@ collect_layers()
          nl -ba "${TMPDIR}/env.safe" >&2
          die "Layer env expansion failed"
    fi
+
+   # Command substitution is expanded above, after the values were validated,
+   # so it can still produce a line break. Only a variable validated as
+   # string-multiline may hold one.
+   local -A multiline=()
+   local name rec
+   while IFS= read -r name; do
+      multiline[$name]=1
+   done < "${TMPDIR}/env.multiline"
+   while IFS= read -r -d '' rec; do
+      name=${rec%%=*}
+      [[ $rec == *[$'\n\r']* && -z ${multiline[$name]:-} ]] &&
+         die "$name spans multiple lines after expansion; only string-multiline variables may"
+   done < <(env_records "${TMPDIR}/final.env")
 
    # Write bootstrap information
    local bdir=$(get_var IGconf_sys_bootstrapdir "${TMPDIR}/final.env") || \

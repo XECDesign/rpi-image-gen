@@ -34,6 +34,7 @@ def Pipeline_register_parser(subparsers, root=None):
     parser.add_argument("--path", "-p", default=default_paths, help=help_text)
     parser.add_argument("--env-out", required=True, help="Write fully resolved env (anchors expanded)")
     parser.add_argument("--plan-out", help="Write layer build plan to this file")
+    parser.add_argument("--multiline-out", help="Write the names of variables allowed to span lines to this file")
     parser.set_defaults(func=_pipeline_main)
 
 
@@ -164,12 +165,16 @@ def _pipeline_main(args):
 
     # Validate after anchor expansion so path validators see fully resolved values
     os.environ.update(final_values)
-    if not _validate_resolved(manager, build_order):
+    multiline: set = set()
+    if not _validate_resolved(manager, build_order, multiline):
         log_error("Error: Validation failed for target layers")
         raise SystemExit(1)
 
     # Write out
     write_env_file(args.env_out, assignments, final_values)
+    if args.multiline_out:
+        with open(args.multiline_out, "w", encoding="utf-8") as handle:
+            handle.writelines(f"{name}\n" for name in sorted(multiline))
 
 
 def _inject_root_anchors(anchor_map: Dict[str, Dict[str, Optional[str]]], env_assignments: Dict[str, str]) -> None:
@@ -337,8 +342,10 @@ def _effective_var_value(env_var: EnvVariable, current: Optional[str]) -> str:
     return str(env_var.value)
 
 
-def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
-    """Validate each variable against the definition that won resolution."""
+def _validate_resolved(manager: LayerManager, build_order: List[str], multiline: Optional[set] = None) -> bool:
+    """Validate each variable against the definition that won resolution.
+    Names of variables whose winning validator allows multiple lines are added
+    to multiline when given."""
     variable_definitions = _collect_variable_definitions(manager, build_order)
     resolver = VariableResolver()
     selected: Dict[str, EnvVariable] = {}
@@ -368,6 +375,8 @@ def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
 
             try:
                 validator = parse_validator(valid_rule)
+                if multiline is not None and getattr(validator, "multiline", False):
+                    multiline.add(req_var)
             except Exception:
                 log_error(f"[FAIL] {req_var}={current} (invalid rule '{valid_rule}', layer: {layer_name})")
                 ok = False
@@ -456,6 +465,9 @@ def _validate_resolved(manager: LayerManager, build_order: List[str]) -> bool:
             if fired:
                 log_error(f"[FAIL] Conflict: {expr}")
                 ok = False
+    if multiline is not None:
+        multiline.update(name for name, env_var in selected.items()
+                         if getattr(env_var.validator, "multiline", False))
     return ok
 
 
