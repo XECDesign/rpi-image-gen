@@ -170,6 +170,21 @@ run_test "valid-string-or-empty" \
     0 \
     "Empty string is valid when using string-or-empty validation rule"
 
+run_test "string-rejects-multiline" \
+    "IGconf_test_pmap=\$'one\\ntwo' ig metadata --validate ${LAYERS}/string-or-empty.yaml" \
+    1 \
+    "A string validation rule should reject a value spanning lines"
+
+run_test "string-multiline-accepts-multiline" \
+    "IGconf_test_pmap=\$'one\\ntwo' ig metadata --validate ${LAYERS}/string-multiline-or-empty.yaml" \
+    0 \
+    "A string-multiline validation rule should accept a value spanning lines"
+
+run_test "string-multiline-or-empty-accepts-empty" \
+    "ig metadata --validate ${LAYERS}/string-multiline-or-empty.yaml" \
+    0 \
+    "Empty string is valid when using string-multiline-or-empty validation rule"
+
 run_test "valid-basic-describe" \
     "ig metadata --describe ${LAYERS}/valid-basic.yaml" \
     0 \

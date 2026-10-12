@@ -79,9 +79,10 @@ class IntegerValidator(BaseValidator):
 
 
 class StringValidator(BaseValidator):
-    def __init__(self, allow_empty: bool = False, allow_unset: bool = False):
+    def __init__(self, allow_empty: bool = False, allow_unset: bool = False, multiline: bool = False):
         self.allow_empty = allow_empty
         self.allow_unset = allow_unset
+        self.multiline = multiline
 
     def validate(self, value: Optional[str]) -> list[str]:
         if value is None:
@@ -90,23 +91,28 @@ class StringValidator(BaseValidator):
             return ["String value cannot be None/unset"]
         if value == "" and not self.allow_empty:
             return ["String value cannot be empty"]
+        if not self.multiline and ("\n" in value or "\r" in value):
+            return ["String value must be a single line (use string-multiline to allow more)"]
         return []
 
     def describe(self) -> str:
+        kind = "Multi-line string value" if self.multiline else "String value"
         if self.allow_unset and self.allow_empty:
-            return "String value (may be empty or unset)"
+            return f"{kind} (may be empty or unset)"
         elif self.allow_unset:
-            return "String value (may be unset but not empty)"
+            return f"{kind} (may be unset but not empty)"
         elif self.allow_empty:
-            return "String value (may be empty)"
+            return f"{kind} (may be empty)"
         else:
-            return "Non-empty string value"
+            return f"Non-empty {kind[0].lower()}{kind[1:]}"
 
     @classmethod
     def get_help_text(cls) -> str:
-        return """string                 - Must be a non-empty string (required)
-  string-or-unset        - Must be non-empty string or unset (null)
-  string-or-empty        - Must be any string (may be empty) but not unset"""
+        return """string                    - Must be a non-empty single-line string (required)
+  string-or-unset           - Must be non-empty single-line string or unset (null)
+  string-or-empty           - Must be any single-line string (may be empty) but not unset
+  string-multiline          - Must be a non-empty string, which may span multiple lines
+  string-multiline-or-empty - Must be any string, which may span multiple lines (may be empty) but not unset"""
 
 
 class EnumValidator(BaseValidator):
@@ -357,6 +363,10 @@ def parse_validator(rule_str: str) -> BaseValidator:
         return StringValidator(allow_empty=True)
     elif rule_str == "string-or-unset":
         return StringValidator(allow_unset=True)
+    elif rule_str == "string-multiline":
+        return StringValidator(multiline=True)
+    elif rule_str == "string-multiline-or-empty":
+        return StringValidator(allow_empty=True, multiline=True)
     elif rule_str == "bool":
         return BooleanValidator()
     elif rule_str == "int":
@@ -392,7 +402,7 @@ def parse_validator(rule_str: str) -> BaseValidator:
         return EnumValidator(options)
     else:
         # Single value without comma - reject unless it's a known type
-        if rule_str in ["string", "string-or-empty", "string-or-unset", "bool", "int", "size", "capacity", "file", "file-nzero", "dir"]:
+        if rule_str in ["string", "string-or-empty", "string-or-unset", "string-multiline", "string-multiline-or-empty", "bool", "int", "size", "capacity", "file", "file-nzero", "dir"]:
             raise ValueError(f"Unknown validation rule: {rule_str}")
         else:
             raise ValueError(f"Single value '{rule_str}' must use trailing comma ('{rule_str},') or keywords: prefix ('keywords:{rule_str}')")

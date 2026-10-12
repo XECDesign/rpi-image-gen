@@ -1,0 +1,13 @@
+# METABEGIN
+# X-Env-Layer-Name: test-string-multiline-or-empty
+# X-Env-Layer-Desc: Test layer for string-multiline-or-empty validation
+# X-Env-Layer-Version: 1.0.0
+# X-Env-Layer-Category: test
+# X-Env-VarPrefix: test
+#
+# X-Env-Var-pmap:
+# X-Env-Var-pmap-Desc: Allow an empty or multi-line string
+# X-Env-Var-pmap-Required: n
+# X-Env-Var-pmap-Valid: string-multiline-or-empty
+# X-Env-Var-pmap-Set: lazy
+# METAEND
