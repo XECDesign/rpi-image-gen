@@ -5,6 +5,8 @@ import yaml
 from pathlib import Path
 from typing import Optional, Dict, Any, Tuple
 
+from env_resolver import env_records, env_value
+
 
 class ConfigLoader:
     def __init__(self, cfg_path: str, *, expand_vars: bool = True, overrides_path: Optional[str] = None, search_paths: Optional[list[str]] = None):
@@ -163,8 +165,8 @@ class ConfigLoader:
                 expansion_context[env_key] = self._expand(value)
 
         try:
-            with open(self.overrides_path, 'r') as f:
-                for line_num, line in enumerate(f, 1):
+            with open(self.overrides_path, 'r', newline='') as f:
+                for line_num, line in enumerate(env_records(f.read()), 1):
                     line = line.strip()
 
                     if not line or line.startswith('#'):
@@ -340,7 +342,7 @@ class ConfigLoader:
             effective_value = self._expand(value)
             source = "config"
 
-        file_handle.write(f'{env_key}="{effective_value}"\n')
+        file_handle.write(f'{env_key}="{env_value(effective_value, env_key)}"\n')
 
         # Use same output format as _set_env_if_unset for consistency
         if source == "env":
@@ -404,7 +406,7 @@ class ConfigLoader:
             if section_filter is not None and section_filter != "env":
                 return
 
-        file_handle.write(f'{override_key}="{effective_value}"\n')
+        file_handle.write(f'{override_key}="{env_value(effective_value, override_key)}"\n')
 
         # Print to console for consistency
         if source == "env":
@@ -444,7 +446,7 @@ class ConfigLoader:
             else:
                 effective_value = self._expand(value)
                 source = "config"
-            file_handle.write(f'{key}="{effective_value}"\n')
+            file_handle.write(f'{key}="{env_value(effective_value, key)}"\n')
             if source == "env":
                 print(f"ENV {key}={effective_value}")
             elif source == "override":

@@ -11,6 +11,8 @@ __all__ = [
     "AssignmentError",
     "CircularReferenceError",
     "UndefinedVariableError",
+    "env_records",
+    "env_value",
     "load_env_file",
     "write_env_file",
     "LazyEnvResolver",
@@ -36,12 +38,26 @@ class UndefinedVariableError(AssignmentError):
     """Raised when a referenced variable is missing."""
 
 
+def env_records(text: str) -> list[str]:
+    """Split env file text, read with newline="", into key=value records, one
+    per line. A value spanning lines is stored with a NUL in place of each line
+    break, which no value can otherwise contain; restore them."""
+    return [line.removesuffix("\r").replace("\0", "\n") for line in text.split("\n")]
+
+
+def env_value(value: str, name: str = "") -> str:
+    """Encode a value for a single env file line: NUL for each line break."""
+    if "\0" in value:
+        raise ValueError(f"{name or 'Value'}: contains a NUL byte")
+    return value.replace("\n", "\0")
+
+
 def load_env_file(path: str | os.PathLike[str]) -> "OrderedDict[str, str]":
     """Load simple key=value pairs (no inline comments/quotes)."""
     ordered: "OrderedDict[str, str]" = OrderedDict()
     resolved = str(Path(path).resolve())
-    with open(resolved, "r", encoding="utf-8") as handle:
-        for lineno, line in enumerate(handle, 1):
+    with open(resolved, "r", encoding="utf-8", newline="") as handle:
+        for lineno, line in enumerate(env_records(handle.read()), 1):
             stripped = line.strip()
             if not stripped or stripped.startswith("#"):
                 continue
@@ -68,7 +84,7 @@ def write_env_file(
     target.parent.mkdir(parents=True, exist_ok=True)
     with open(target, "w", encoding="utf-8") as handle:
         for name in assignments:
-            handle.write(f"{name}={resolved_values.get(name, '')}\n")
+            handle.write(f"{name}={env_value(resolved_values.get(name, ''), name)}\n")
 
 
 class AnchorRegistry:

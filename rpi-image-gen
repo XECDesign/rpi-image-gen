@@ -101,7 +101,8 @@ esac
 # cmdline
 OVRF="${TMPDIR}/overrides"
 : > "$OVRF"
-[[ ${#OVERRIDES[@]} -gt 0 ]] && printf '%s\n' "${OVERRIDES[@]}" >> "$OVRF"
+# One per line, with a NUL in place of any line break within an override
+[[ ${#OVERRIDES[@]} -gt 0 ]] && printf '%s\0' "${OVERRIDES[@]}" | tr '\n\0' '\0\n' >> "$OVRF"
 [[ -n ${HOST_BUILD_DIR:-} ]] && printf 'IGconf_sys_workroot="%s"\n' "$HOST_BUILD_DIR" >> "$OVRF"
 # Must hold sane key=value pairs
 while IFS= read -r line || [ -n "$line" ]; do
@@ -188,7 +189,8 @@ EOF
       printf 'SRCROOT="%s"\n' "$SRCROOT" >> "${TMPDIR}/config.env"
 
   msg "\nENV" 
-  cat ${TMPDIR}/config.env
+  # A NUL stands for a line break within a value
+  tr '\0' '\n' < "${TMPDIR}/config.env"
 }
 
 
@@ -231,9 +233,10 @@ collect_layers()
    # Normalise
    safe_kv "${TMPDIR}/env.out" > "${TMPDIR}/env.safe"
 
-   # Expand all variables with a strict policy, posix only
+   # Expand all variables with a strict policy, posix only. Names come from
+   # env.out, as a value spanning lines puts its later lines in env.safe.
    local -a vars
-   mapfile -t vars < <(grep -oE '^[A-Za-z_][A-Za-z0-9_]*' "${TMPDIR}/env.safe")
+   mapfile -t vars < <(grep -aoE '^[A-Za-z_][A-Za-z0-9_]*' "${TMPDIR}/env.out")
 
    if ! env -i POSIXLY_CORRECT=1 \
       /bin/sh -c '
@@ -242,7 +245,10 @@ collect_layers()
          shift
          for v in "$@"; do
             eval "val=\${$v-}"
-            printf "%s=\"%s\"\n" "$v" "$val"
+            # A NUL in place of each line break keeps one record per line
+            printf "%s=\"" "$v"
+            printf "%s" "$val" | tr "\n" "\0"
+            printf "\"\n"
          done
          ' _ "${TMPDIR}/env.safe" "${vars[@]}" > "${TMPDIR}/final.env"
       then

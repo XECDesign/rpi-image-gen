@@ -87,6 +87,20 @@ rund()
 export -f rund
 
 
+# env_records <file>: the KEY=value records of an env file, one per line,
+# each emitted NUL-terminated and skipping blanks and comments. A value
+# spanning lines is stored with a NUL in place of each line break, which no
+# value can otherwise contain, so swapping the two restores it.
+env_records() {
+   local rec
+   while IFS= read -r -d '' rec || [[ -n $rec ]]; do
+      [[ $rec =~ ^[[:space:]]*(#|$) ]] && continue
+      printf '%s\0' "$rec"
+   done < <(tr '\n\0' '\0\n' < "$1")
+}
+export -f env_records
+
+
 # Command runner with env wrapper
 runenv() {
     local file=$1; shift
@@ -109,11 +123,11 @@ runenv() {
 
     # convert to kv
     local -a env_args
-    while IFS='=' read -r k v; do
+    while IFS='=' read -r -d '' k v; do
        v=${v#\"}
        v=${v%\"}
        env_args+=("$k=$v")
-    done < <(sed '/^[[:space:]]*#/d;/^[[:space:]]*$/d' "$file")
+    done < <(env_records "$file")
 
     if [[ $safe -eq 1 ]]; then
        runsafe "${env_opts[@]}" "${env_args[@]}" "${cmd[@]}"
@@ -129,7 +143,8 @@ get_var() {
    local key="$1" file="$2"
    local line value
 
-   if line=$(grep "^${key}=" "$file" 2>/dev/null); then
+   # -a and tr: a value spanning lines is stored with a NUL for each break
+   if line=$(grep -a "^${key}=" "$file" 2>/dev/null | tr '\0' '\n'); then
       value="${line#*=}"
       value="${value#\"}"
       value="${value%\"}"
@@ -153,13 +168,14 @@ mapfile_kv() {
    [[ -r $file ]] || die "$0 cannot read $file"
 
    # FIXME use get_var
-   while IFS= read -r line || [[ -n $line ]]; do
+   local line
+   while IFS= read -r -d '' line; do
       key=${line%%=*}
       val=${line#*=}
       val=${val#\"}
       val=${val%\"}
       "$cmd" "$key" "$val" "$@" || { err "$0 exec $cmd" ; return 1 ;}
-   done < "$file"
+   done < <(env_records "$file")
 }
 
 
@@ -450,9 +466,11 @@ safe_kv() {
   python3 - "$1" <<'PY'
 import sys
 import re
-with open(sys.argv[1], encoding='utf-8') as src:
-   for raw in src:
-      line = raw.rstrip('\n')
+with open(sys.argv[1], encoding='utf-8', newline='') as src:
+   # A NUL stands for a line break within a value; sh is happy with a newline
+   # inside the double quotes written below
+   for raw in src.read().removesuffix('\n').split('\n'):
+      line = raw.removesuffix('\r').replace('\0', '\n')
       if not line or line.lstrip().startswith('#') or '=' not in line:
          print(line)
          continue

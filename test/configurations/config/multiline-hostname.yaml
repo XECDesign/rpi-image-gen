@@ -1,0 +1,7 @@
+# A multi-line value for a single-line string variable
+include:
+  file: trixie-minbase.yaml
+device:
+  hostname: |-
+    one
+    two

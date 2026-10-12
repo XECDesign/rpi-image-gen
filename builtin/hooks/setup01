@@ -6,5 +6,6 @@ echo "${SOURCE_DATE_EPOCH:?}" > "${IGconf_target_dir}/SOURCE_DATE_EPOCH"
 
 # Ensure epoch is always published to build env
 env="${IGconf_sys_bootstrapdir}/final.env"
-grep -q '^SOURCE_DATE_EPOCH=' "$env" || \
+# -a: a value spanning lines is stored with a NUL for each break
+grep -aq '^SOURCE_DATE_EPOCH=' "$env" || \
    printf 'SOURCE_DATE_EPOCH="%s"\n' "$SOURCE_DATE_EPOCH" >> "$env"

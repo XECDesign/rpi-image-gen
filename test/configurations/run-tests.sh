@@ -195,6 +195,41 @@ run_test "dryconfig16 - quoted values" \
     0 \
     "Values containing quotes should reach runner hooks as configured"
 
+run_test "dryconfig17 - multiline string value" \
+    'out=$(printf "n\n" | $IG build -c '"${SRC}"'/config/multiline-hostname.yaml -I 2>&1); \
+     test $? -ne 0 && echo "$out" | grep -q "must be a single line"' \
+    0 \
+    "A string variable should reject a value spanning lines"
+
+run_test "dryconfig17b - NUL in value" \
+    'out=$(printf "n\n" | $IG build -c '"${SRC}"'/config/nul-value.yaml -I 2>&1); \
+     test $? -ne 0 && echo "$out" | grep -q "IGconf_device_hostname: contains a NUL byte"' \
+    0 \
+    "A value containing a NUL should be rejected"
+
+# What a layer hook run by bin/runner sees for $2 when the layer's .d/env holds
+# $1 (printf format, so the file need not end in a newline)
+runner_env_hook() {
+    local d rc
+    d=$(mktemp -d)
+    mkdir -p "$d/probe.d/hooks"
+    printf "$1" > "$d/probe.d/env"
+    printf '#!/bin/bash\nprintf "%%s" "$%s" > "%s/out"\n' "$2" "$d" > "$d/probe.d/hooks/prebuild10-probe"
+    chmod +x "$d/probe.d/hooks/prebuild10-probe"
+    : > "$d/probe.yaml"
+    printf 'probe:1.0.0:%s/probe.yaml:%s/probe.yaml:x:%s/work\n' "$d" "$d" "$d" > "$d/plan"
+    IGTOP="$IGTOP" "$IGTOP/bin/runner" prebuild "$d/plan" >/dev/null 2>&1 && cat "$d/out"
+    rc=$?
+    rm -rf "$d"
+    return $rc
+}
+
+run_test "envfile - line-based layer env" \
+    "test \"\$(runner_env_hook 'A=\"bar baz\"\\n# c\\nB=last' A)\" = 'bar baz' && \
+     test \"\$(runner_env_hook 'A=\"bar baz\"\\n# c\\nB=last' B)\" = last" \
+    0 \
+    "A line-based layer env file, without a final newline, should reach hooks"
+
 print_summary
 exit 0
 

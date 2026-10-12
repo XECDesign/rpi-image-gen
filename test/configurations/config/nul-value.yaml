@@ -1,0 +1,5 @@
+# A value containing a NUL, which no env file can carry
+include:
+  file: trixie-minbase.yaml
+device:
+  hostname: "a\0b"
