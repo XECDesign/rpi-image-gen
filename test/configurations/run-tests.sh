@@ -242,6 +242,53 @@ run_test "dryconfig19 - multiline undeclared override" \
     0 \
     "A variable no layer declares as string-multiline should not span lines"
 
+# Dry run $1 with overrides $2.., then check what a runner hook sees for
+# IGconf_ssh_pubkey_user1 is the two keys in two-keys.pub
+check_hook_keys() {
+    local cfg=$1 out bdir; shift
+    out=$(printf 'n\n' | $IG build -c "$cfg" -I -- "$@" 2>&1)
+    bdir=$(echo "$out" | sed -n 's/^IGconf_sys_bootstrapdir *: *//p' | head -n1)
+    test -n "$bdir" || return 1
+    # As runner hooks receive it
+    [ "$( . "${IGTOP}/lib/common.sh" && runenv "$bdir/final.env" printenv IGconf_ssh_pubkey_user1)" = \
+      "$(cat "${SRC}/config/two-keys.pub")" ] &&
+    # As handed to bdebstrap, shown under FINAL ENV
+    printf '%s\n' "$out" | grep -A1 -xF 'IGconf_ssh_pubkey_user1 : ssh-ed25519 AAAAONE me@laptop' |
+        grep -qxF 'ssh-ed25519 AAAATWO me@desktop'
+}
+
+run_test "dryconfig20 - multiline value" \
+    "check_hook_keys ${SRC}/config/multiline-pubkey.yaml" \
+    0 \
+    "A string-multiline variable should reach runner hooks with every line"
+
+run_test "dryconfig21 - multiline substitution" \
+    "check_hook_keys ${SRC}/config/multiline-subst-pubkey.yaml" \
+    0 \
+    "Command substitution spanning lines should reach a string-multiline variable"
+
+run_test "dryconfig22 - multiline override" \
+    "check_hook_keys trixie-minbase.yaml \"IGconf_ssh_pubkey_user1=\$(cat ${SRC}/config/two-keys.pub)\"" \
+    0 \
+    "A command line override spanning lines should reach a string-multiline variable"
+
+# final.env stays one record per line, a multi-line value holding a NUL for
+# each line break, so ordinary entries read as before
+check_final_env_lines() {
+    local bdir
+    bdir=$(printf 'n\n' | $IG build -c "$1" -I 2>&1 |
+           sed -n 's/^IGconf_sys_bootstrapdir *: *//p' | head -n1)
+    test -n "$bdir" || return 1
+    [ "$(grep -ac '' "$bdir/final.env")" = "$(grep -acE '^[A-Za-z_][A-Za-z0-9_]*=' "$bdir/final.env")" ] &&
+    [ "$(grep -a '^IGconf_ssh_pubkey_user1=' "$bdir/final.env" | tr -dc '\0' | wc -c)" = 1 ] &&
+    grep -aqx 'IGconf_image_suffix="img"' "$bdir/final.env"
+}
+
+run_test "dryconfig23 - final.env records" \
+    "check_final_env_lines ${SRC}/config/multiline-pubkey.yaml" \
+    0 \
+    "final.env should keep one record per line with a multi-line value"
+
 print_summary
 exit 0
 

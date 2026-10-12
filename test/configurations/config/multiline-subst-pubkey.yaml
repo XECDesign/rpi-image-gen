@@ -1,0 +1,5 @@
+# Command substitution producing several lines for a string-multiline variable
+include:
+  file: trixie-minbase.yaml
+ssh:
+  pubkey_user1: $(cat ${IGTOP}/test/configurations/config/two-keys.pub)

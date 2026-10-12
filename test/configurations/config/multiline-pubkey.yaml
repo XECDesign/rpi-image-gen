@@ -1,0 +1,7 @@
+# A multi-line value for a string-multiline variable
+include:
+  file: trixie-minbase.yaml
+ssh:
+  pubkey_user1: |-
+    ssh-ed25519 AAAAONE me@laptop
+    ssh-ed25519 AAAATWO me@desktop

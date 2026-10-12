@@ -382,7 +382,7 @@ ssh:
   pubkey_only: y
 ----
 
-Care must be taken if using the command line to assign a value to a variable if the value contains spaces or newlines. Making sure the calling shell expands it into a single argument ensures the command substitution happens once and stays on one line:
+Care must be taken if using the command line to assign a value to a variable if the value contains spaces or newlines. Making sure the calling shell expands it into a single argument ensures the command substitution happens once:
 
 [source,bash]
 ----
@@ -410,7 +410,17 @@ Variables are resolved after configuration parsing and layer assembly, and then 
 ====
 There may be a need to handle non-alphanumeric characters in config files and/or command line arguments. Input files are parsed as-is, without stripping quotes. In YAML, quote only when you need YAML to treat the value as a string (eg, URLs can be unquoted: `url: https://...`). On the command line, use shell quoting when needed to protect special characters or expansions (eg, `rpi-image-gen build -c <args> -- IGconf_device_user1pass='Fo0bar!!'`).
 
-A value may span multiple lines only if its variable is validated as `string-multiline` or `string-multiline-or-empty`. The build's env files hold one variable per line, so a line break within a value is stored there as a NUL. To read them, use `tr '\0' '\n' < final.env` or `grep -a`.
+A value may span multiple lines only if its variable is validated as `string-multiline` or `string-multiline-or-empty`, eg several SSH keys:
+
+[source,yaml]
+----
+ssh:
+  pubkey_user1: |
+    ssh-ed25519 AAAA... me@laptop
+    ssh-ed25519 AAAA... me@desktop
+----
+
+The build's env files hold one variable per line, so a line break within a value is stored there as a NUL. To read them, use `tr '\0' '\n' < final.env` or `grep -a`.
 ====
 
 === Cross-Reference Expansion
